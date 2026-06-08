@@ -27,9 +27,9 @@ names = df["Nama"].tolist()
 # =========================================
 # CENTROID AWAL
 # =========================================
-K = 7
+K = 4
 
-# CENTROID YANG DIPILIH ADALAH LIST BARIS INDEX 0-6
+# CENTROID YANG DIPILIH ADALAH LIST BARIS INDEX 0-3
 centroids = copy.deepcopy(features[:K])
 
 clusters_lama = None
@@ -45,39 +45,6 @@ def euclidean(a, b):
 		total += (a[i] - b[i]) ** 2
 
 	return math.sqrt(total)
-
-# =========================================
-# NAMA CLUSTER
-# =========================================
-def nama_cluster(centroid):
-	pendidik = centroid[0]
-	karier = centroid[1]
-	akademik = centroid[2]
-	eksternal = centroid[3]
-
-	if pendidik < 3 and karier < 3 and akademik < 3 and eksternal < 3:
-		return "Motivasi Rendah"
-
-	# KALAU (SEMUA) NILAI SAMA
-	if pendidik == karier == akademik == eksternal:
-		return "Motivasi Netral (Seimbang)"
-
-	nilai_tertinggi = max(pendidik, karier, akademik, eksternal)
-
-	# KALAU ADA YANG NILAI SAMA (BUKAN SEMUA)
-	list_nilai = [pendidik, karier, akademik, eksternal]
-	if list_nilai.count(nilai_tertinggi) > 1:
-		return "Motivasi Campuran"
-
-	# 1 NILAI DOMINAN
-	if nilai_tertinggi == pendidik:
-		return "Calon Pendidik"
-	elif nilai_tertinggi == karier:
-		return "Berkarir di bidang Teknologi"
-	elif nilai_tertinggi == akademik:
-		return "Orientasi Akademik Tinggi"
-	else:
-		return "Motivasi Eksternal Dominan"
 
 # =========================================
 # K-MEANS
@@ -106,10 +73,8 @@ for loop in range(1000):
 	# TAMPILKAN CLUSTER
 	# =====================================
 	for i in range(K):
-		nama = nama_cluster(centroids[i])
-
 		print("\n")
-		print(f"CLUSTER {i+1} : {nama}")
+		print(f"CLUSTER {i+1}")
 		print(f"Jumlah anggota : {len(clusters[i])}")
 
 		print("-" * 40)
@@ -165,12 +130,72 @@ for loop in range(1000):
 
 		for j in range(4):
 			centroid_baru[j] /= len(cluster)
-			centroid_baru[j] = round(centroid_baru[j], 2)
 
 		centroids_baru.append(centroid_baru)
 
 	centroids = centroids_baru
 	iterasi += 1
+
+# =========================================
+# SILHOUETTE
+# =========================================
+def silhouette_per_cluster(features, clusters):
+	hasil_cluster = []
+
+	for cluster_idx, cluster in enumerate(clusters):
+		nilai_cluster = []
+
+		for point_idx in cluster:
+			point = features[point_idx]
+
+			# a(i)
+			if len(cluster) <= 1:
+				a = 0
+			else:
+				total = 0
+
+				for other_idx in cluster:
+					if other_idx != point_idx:
+						total += euclidean(point, features[other_idx])
+
+				a = total / (len(cluster) - 1)
+
+			# b(i)
+			b = float("inf")
+
+			for other_cluster_idx, other_cluster in enumerate(clusters):
+
+				if other_cluster_idx == cluster_idx:
+					continue
+
+				if len(other_cluster) == 0:
+					continue
+
+				total = 0
+
+				for other_idx in other_cluster:
+					total += euclidean(point, features[other_idx])
+
+				avg = total / len(other_cluster)
+
+				b = min(b, avg)
+
+			# s(i)
+			if max(a, b) == 0:
+				s = 0
+			else:
+				s = (b - a) / max(a, b)
+
+			nilai_cluster.append(s)
+
+		if len(nilai_cluster) == 0:
+			hasil_cluster.append(0)
+		else:
+			hasil_cluster.append(sum(nilai_cluster) / len(nilai_cluster))
+
+	return hasil_cluster
+
+silhouette_cluster = silhouette_per_cluster(features, clusters)
 
 # =========================================
 # HASIL AKHIR
@@ -181,11 +206,10 @@ print("HASIL AKHIR CLUSTERING")
 print("=" * 60)
 
 for i in range(K):
-	nama = nama_cluster(centroids[i])
-
 	print("\n")
-	print(f"CLUSTER {i+1} : {nama}")
+	print(f"CLUSTER {i+1}")
 	print(f"Jumlah anggota : {len(clusters[i])}")
+	print(f"Silhouette: {round(silhouette_cluster[i], 2)}")
 
 	print("-" * 40)
 
