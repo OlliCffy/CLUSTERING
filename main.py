@@ -30,7 +30,7 @@ names = df["Nama"].tolist()
 K = 4
 
 # CENTROID YANG DIPILIH ADALAH LIST BARIS INDEX 0-3
-centroids = copy.deepcopy(features[:K])
+centroids = features[:K]
 
 clusters_lama = None
 iterasi = 1
